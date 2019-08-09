@@ -2406,7 +2406,6 @@ and type_expect_
         exp_env = env }
   | Pexp_fun (l, Some default, spat, sbody) ->
       assert(is_optional l); (* default allowed only with optional argument *)
-      (*
       let open Ast_helper in
       let default_loc = default.pexp_loc in
       let scases = [
@@ -2420,7 +2419,8 @@ and type_expect_
           (Pat.construct ~loc:default_loc
              (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))))
              None)
-          default;
+          (Exp.assert_ ~loc:default_loc
+             (Exp.construct ~loc:default_loc (mknoloc (Longident.(Ldot (Lident "*predef*", "false")))) None));
        ]
       in
       let sloc =
@@ -2438,10 +2438,10 @@ and type_expect_
         Exp.let_ ~loc Nonrecursive
           ~attrs:[Attr.mk (mknoloc "#default") (PStr [])]
           [Vb.mk spat smatch] sbody
-      in*)
+      in
       let typed_default = type_exp env default in
       type_function ?in_function ~default:typed_default loc sexp.pexp_attributes env
-                    ty_expected_explained l [Ast_helper.Exp.case spat sbody]
+                    ty_expected_explained l [Exp.case pat body]
   | Pexp_fun (l, None, spat, sbody) ->
       type_function ?in_function loc sexp.pexp_attributes env
                     ty_expected_explained l [Ast_helper.Exp.case spat sbody]
@@ -4089,7 +4089,10 @@ and type_application env funct sargs =
               may_warn funct.exp_loc
                 (Warnings.Without_principality "eliminated optional argument");
               ignored := (l,ty,lv) :: !ignored;
-              Some (fun () -> option_none (instance ty) Location.none)
+              Some (fun () -> option_some (type_argument env sarg0
+                                             (extract_option_type env ty)
+                                             (extract_option_type env ty0)))
+              (*Some (fun () -> option_none (instance ty) Location.none)*)
             end else begin
               may_warn funct.exp_loc
                 (Warnings.Without_principality "commuted an argument");
@@ -4117,6 +4120,10 @@ and type_application env funct sargs =
              true
         with Unify _ -> false)
     | _ -> false
+  in
+  let extract_default funct =
+    match funct.exp_type, funct.exp_desc with
+    | Tarrow (Optional l, _, _, _), exp -> exp
   in
   match sargs with
     (* Special case for ignore: avoid discarding warning *)
