@@ -2406,6 +2406,7 @@ and type_expect_
         exp_env = env }
   | Pexp_fun (l, Some default, spat, sbody) ->
       assert(is_optional l); (* default allowed only with optional argument *)
+      (*
       let open Ast_helper in
       let default_loc = default.pexp_loc in
       let scases = [
@@ -2437,9 +2438,10 @@ and type_expect_
         Exp.let_ ~loc Nonrecursive
           ~attrs:[Attr.mk (mknoloc "#default") (PStr [])]
           [Vb.mk spat smatch] sbody
-      in
-      type_function ?in_function loc sexp.pexp_attributes env
-                    ty_expected_explained l [Exp.case pat body]
+      in*)
+      let typed_default = type_exp env default in
+      type_function ?in_function ~default:typed_default loc sexp.pexp_attributes env
+                    ty_expected_explained l [Ast_helper.Exp.case spat sbody]
   | Pexp_fun (l, None, spat, sbody) ->
       type_function ?in_function loc sexp.pexp_attributes env
                     ty_expected_explained l [Ast_helper.Exp.case spat sbody]
@@ -3461,7 +3463,7 @@ and type_binding_op_ident env s =
   in
   path, desc
 
-and type_function ?in_function loc attrs env ty_expected_explained l caselist =
+and type_function ?in_function ?default loc attrs env ty_expected_explained l caselist =
   let { ty = ty_expected; explanation } = ty_expected_explained in
   let (loc_fun, ty_fun) =
     match in_function with Some p -> p
@@ -3508,7 +3510,7 @@ and type_function ?in_function loc attrs env ty_expected_explained l caselist =
       Warnings.Unerasable_optional_argument;
   let param = name_cases "param" cases in
   re {
-    exp_desc = Texp_function { arg_label = l; param; cases; partial; };
+    exp_desc = Texp_function { arg_label = l; arg_default = default; param; cases; partial; };
     exp_loc = loc; exp_extra = [];
     exp_type = instance (newgenty (Tarrow(l, ty_arg, ty_res, Cok)));
     exp_attributes = attrs;
@@ -3914,7 +3916,7 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
         let cases = [case eta_pat e] in
         let param = name_cases "param" cases in
         { texp with exp_type = ty_fun; exp_desc =
-          Texp_function { arg_label = Nolabel; param; cases;
+          Texp_function { arg_label = Nolabel; arg_default = None; param; cases;
             partial = Total; } }
       in
       Location.prerr_warning texp.exp_loc

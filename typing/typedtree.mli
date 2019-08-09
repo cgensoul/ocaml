@@ -141,7 +141,7 @@ and expression_desc =
         (** let P1 = E1 and ... and Pn = EN in E       (flag = Nonrecursive)
             let rec P1 = E1 and ... and Pn = EN in E   (flag = Recursive)
          *)
-  | Texp_function of { arg_label : arg_label; param : Ident.t;
+  | Texp_function of { arg_label : arg_label; arg_default : expression option; param : Ident.t;
       cases : case list; partial : partial; }
         (** [Pexp_fun] and [Pexp_function] both translate to [Texp_function].
             See {!Parsetree} for more details.

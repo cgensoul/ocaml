@@ -89,11 +89,11 @@ type binding =
 let rec push_defaults loc bindings cases partial =
   match cases with
     [{c_lhs=pat; c_guard=None;
-      c_rhs={exp_desc = Texp_function { arg_label; param; cases; partial; } }
+      c_rhs={exp_desc = Texp_function { arg_label; arg_default; param; cases; partial; } }
         as exp}] ->
       let cases = push_defaults exp.exp_loc bindings cases partial in
       [{c_lhs=pat; c_guard=None;
-        c_rhs={exp with exp_desc = Texp_function { arg_label; param; cases;
+        c_rhs={exp with exp_desc = Texp_function { arg_label; arg_default; param; cases;
           partial; }}}]
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{Parsetree.attr_name = {txt="#default"};_}];
